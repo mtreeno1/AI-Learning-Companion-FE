@@ -5,7 +5,7 @@ import { Sidebar } from "@/components/sidebar";
 import { StudyMode } from "@/components/study-mode";
 import { Dashboard } from "@/components/dashboard";
 import { History } from "@/components/history";
-import { AuthPage } from "@/pages/auth/auth-page";
+import { AuthPage } from "@/components/auth/auth-page";
 import { useAuth } from "@/context/auth-context";
 
 export type View = "study" | "dashboard" | "history";
