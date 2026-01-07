@@ -201,7 +201,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
 
         console.log("Creating session...");
         const response = await fetch(
-          "http://localhost:8000/api/focus/sessions",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/focus/sessions`,
           {
             method: "POST",
             headers: {
@@ -247,7 +247,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
       try {
         console.log("🎥 Starting video recording...");
         const response = await fetch(
-          `http://localhost:8000/api/recordings/sessions/${sessionId}/start?fps=30&resolution=1920x1080`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/recordings/sessions/${sessionId}/start?fps=30&resolution=1920x1080`,
           {
             method: "POST",
             headers: {
@@ -286,7 +286,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
       try {
         console.log("🛑 Stopping video recording...");
         const response = await fetch(
-          `http://localhost:8000/api/recordings/sessions/${sessionId}/stop`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/recordings/sessions/${sessionId}/stop`,
           {
             method: "POST",
             headers: {
@@ -509,7 +509,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
           console.log(`Ending session: ${sessionId}`);
 
           const response = await fetch(
-            `http://localhost:8000/api/focus/sessions/${sessionId}/end`,
+            `${process.env.NEXT_PUBLIC_API_URL}/api/focus/sessions/${sessionId}/end`,
             {
               method: "POST",
               headers: {
@@ -1036,7 +1036,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
                       variant="outline"
                       onClick={() => {
                         window.open(
-                          `http://localhost:8000/api/recordings/${recordingId}/download`,
+                          `${process.env.NEXT_PUBLIC_API_URL}/api/recordings/${recordingId}/download`,
                           "_blank"
                         );
                       }}
