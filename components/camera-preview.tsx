@@ -109,10 +109,16 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
     const [isTracking, setIsTracking] = useState(false);
     const [detection, setDetection] = useState<DetectionResult | null>(null);
     const [isReconnecting, setIsReconnecting] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false); // ✅ Track if frame is being processed
 
     // Recording states
     const [isRecording, setIsRecording] = useState(false);
     const [recordingId, setRecordingId] = useState<string | null>(null);
+
+    // Performance tracking
+    const [avgLatency, setAvgLatency] = useState<number>(0);
+    const latencyHistoryRef = useRef<number[]>([]);
+    const frameTimestampRef = useRef<number>(0);
 
     // ✅ Auto start/stop AI when timer changes
     useEffect(() => {
@@ -171,11 +177,6 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
     const cleanupAll = useCallback(() => {
       stopTracking();
 
-      if (frameIntervalRef.current) {
-        clearInterval(frameIntervalRef.current);
-        frameIntervalRef.current = null;
-      }
-
       if (keepaliveIntervalRef.current) {
         clearInterval(keepaliveIntervalRef.current);
         keepaliveIntervalRef.current = null;
@@ -185,6 +186,10 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
       }
+
+      // ✅ Reset processing state
+      setIsProcessing(false);
+      frameTimestampRef.current = 0;
     }, []);
 
     // Create AI session
@@ -196,7 +201,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
 
         console.log("Creating session...");
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/focus/sessions`,
+          "http://localhost:8000/api/focus/sessions",
           {
             method: "POST",
             headers: {
@@ -242,7 +247,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
       try {
         console.log("🎥 Starting video recording...");
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/recordings/sessions/${sessionId}/start?fps=30&resolution=1920x1080`,
+          `http://localhost:8000/api/recordings/sessions/${sessionId}/start?fps=30&resolution=1920x1080`,
           {
             method: "POST",
             headers: {
@@ -281,7 +286,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
       try {
         console.log("🛑 Stopping video recording...");
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/recordings/sessions/${sessionId}/stop`,
+          `http://localhost:8000/api/recordings/sessions/${sessionId}/stop`,
           {
             method: "POST",
             headers: {
@@ -376,12 +381,39 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
           if (data.error) {
             console.error("AI Error:", data.error);
             setError(data.error);
+            setIsProcessing(false); // ✅ Allow retry on error
             return;
+          }
+
+          // ✅ Calculate latency
+          if (frameTimestampRef.current > 0) {
+            const latency = Date.now() - frameTimestampRef.current;
+            latencyHistoryRef.current.push(latency);
+            if (latencyHistoryRef.current.length > 10) {
+              latencyHistoryRef.current.shift(); // Keep last 10 only
+            }
+            const avg =
+              latencyHistoryRef.current.reduce((a, b) => a + b, 0) /
+              latencyHistoryRef.current.length;
+            setAvgLatency(Math.round(avg));
+
+            // ✅ Log slow responses
+            if (latency > 2000) {
+              console.warn(`⚠️ Slow response: ${latency}ms`);
+            }
           }
 
           // Handle detection result
           const result: DetectionResult = data;
           setDetection(result);
+
+          // ✅ Mark processing complete and send next frame
+          setIsProcessing(false);
+
+          // ✅ Use requestAnimationFrame for smooth frame sending
+          requestAnimationFrame(() => {
+            sendFrame();
+          });
 
           // Play alert for urgent violations
           if (
@@ -392,6 +424,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
           }
         } catch (err) {
           console.error("Failed to parse WebSocket message:", err);
+          setIsProcessing(false); // ✅ Allow retry on parse error
         }
       };
 
@@ -476,7 +509,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
           console.log(`Ending session: ${sessionId}`);
 
           const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/focus/sessions/${sessionId}/end`,
+            `http://localhost:8000/api/focus/sessions/${sessionId}/end`,
             {
               method: "POST",
               headers: {
@@ -511,21 +544,24 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
 
     // Send frames to AI
     const startSendingFrames = () => {
-      if (frameIntervalRef.current) return; // Already sending
-
-      frameIntervalRef.current = setInterval(() => {
-        sendFrame();
-      }, 200); // 5 FPS
+      // ✅ Adaptive frame rate - send first frame to start the chain
+      setIsProcessing(false);
+      sendFrame();
     };
 
     const stopSendingFrames = () => {
-      if (frameIntervalRef.current) {
-        clearInterval(frameIntervalRef.current);
-        frameIntervalRef.current = null;
-      }
+      // ✅ Clean up - no interval to clear anymore
+      setIsProcessing(false);
+      frameTimestampRef.current = 0;
     };
 
     const sendFrame = () => {
+      // ✅ Don't send if already processing previous frame
+      if (isProcessing) {
+        console.log("⏳ Skipping frame - still processing previous");
+        return;
+      }
+
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
 
       const video =
@@ -536,16 +572,25 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
+        // ✅ Aggressive resolution reduction for maximum speed (320x240)
+        canvas.width = 320;
+        canvas.height = 240;
+        ctx.drawImage(video, 0, 0, 320, 240);
 
         try {
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+          setIsProcessing(true); // ✅ Mark as processing
+          frameTimestampRef.current = Date.now(); // ✅ Track send time for latency
+
+          // ✅ Very low JPEG quality for maximum speed (0.5 instead of 0.7)
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.5);
           wsRef.current.send(dataUrl);
         } catch (err) {
           console.error("Failed to send frame:", err);
+          setIsProcessing(false); // ✅ Reset on error
         }
+      } else {
+        // ✅ If no frame ready, reset and try again
+        setIsProcessing(false);
       }
     };
 
@@ -671,6 +716,19 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
                       <span>
                         Score: {detection.stats.current_score.toFixed(1)}
                       </span>
+                      {avgLatency > 0 && (
+                        <span
+                          className={
+                            avgLatency > 1000
+                              ? "text-red-200"
+                              : avgLatency > 500
+                              ? "text-yellow-200"
+                              : ""
+                          }
+                        >
+                          Latency: {avgLatency}ms
+                        </span>
+                      )}
                       {detection.consecutive_violations &&
                         detection.consecutive_violations > 0 && (
                           <span className="text-red-200">
@@ -978,7 +1036,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
                       variant="outline"
                       onClick={() => {
                         window.open(
-                          `${process.env.NEXT_PUBLIC_API_URL}/api/recordings/${recordingId}/download`,
+                          `http://localhost:8000/api/recordings/${recordingId}/download`,
                           "_blank"
                         );
                       }}
