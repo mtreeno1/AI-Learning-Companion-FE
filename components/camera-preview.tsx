@@ -344,8 +344,8 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
       }
 
       const wsUrl = enableRecording
-        ? `ws://localhost:8000/api/focus/ws/${id}?enable_recording=true`
-        : `ws://localhost:8000/api/focus/ws/${id}`;
+        ? `${process.env.WS_URL}/api/focus/ws/${id}?enable_recording=true`
+        : `${process.env.WS_URL}/api/focus/ws/${id}`;
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
