@@ -198,7 +198,7 @@ export const CameraPreview = forwardRef<CameraPreviewRef, CameraPreviewProps>(
         if (!user?.token) {
           throw new Error("No authentication token");
         }
-
+        console.log(process.env.NEXT_PUBLIC_WS_URL);
         console.log("Creating session...");
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/focus/sessions`,
