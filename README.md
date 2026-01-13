@@ -251,3 +251,32 @@ mà giúp họ tự nhận thức và điều chỉnh sự tập trung của ch�
 🧠 Áp dụng tốt cho self-study
 
 🚀 Nền tảng tốt để mở rộng AI giáo dục
+
+---
+
+## 🎵 Chức năng Nhạc Tập trung (Focus Music Player)
+
+### Tính năng mới
+
+AI Learning Companion hiện có tích hợp trình phát nhạc giúp tập trung trong lúc học tập:
+
+- 🎵 **Phát nhạc liên tục** - Tự động chuyển bài khi kết thúc
+- 🎼 **Chọn nhạc tuỳ ý** - Danh sách nhạc có thể click để chọn
+- 🔊 **Điều chỉnh âm lượng** - Có slider và nút tắt tiếng
+- ⏭️ **Điều khiển phát nhạc** - Play, Pause, Next, Previous
+
+### Cách sử dụng
+
+1. Vào chế độ Study Mode
+2. Trình phát nhạc xuất hiện ở panel bên phải
+3. Click nút Play để bắt đầu
+4. Chọn bài nhạc bất kỳ từ danh sách
+5. Điều chỉnh âm lượng theo ý muốn
+
+### Cách thêm nhạc của riêng bạn
+
+1. Đặt file nhạc (MP3, OGG, WAV) vào thư mục `public/assets/music/`
+2. Cập nhật danh sách nhạc trong `context/music-context.tsx`
+3. Xem chi tiết tại [docs/MUSIC_PLAYER.md](docs/MUSIC_PLAYER.md)
+
+---
