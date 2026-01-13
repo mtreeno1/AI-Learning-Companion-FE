@@ -60,6 +60,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   const [volume, setVolumeState] = useState(0.5);
   const [tracks] = useState<MusicTrack[]>(defaultTracks);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Refs to store current values for event handlers
+  const currentTrackRef = useRef<MusicTrack | null>(null);
+  const tracksRef = useRef<MusicTrack[]>(tracks);
+
+  // Update refs when state changes
+  useEffect(() => {
+    currentTrackRef.current = currentTrack;
+  }, [currentTrack]);
+
+  useEffect(() => {
+    tracksRef.current = tracks;
+  }, [tracks]);
 
   // Initialize audio element
   useEffect(() => {
@@ -149,6 +162,9 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   // Handle track end - play next track automatically
   useEffect(() => {
     const handleEnded = () => {
+      const currentTrack = currentTrackRef.current;
+      const tracks = tracksRef.current;
+      
       if (!currentTrack || tracks.length === 0 || !audioRef.current) return;
       
       const currentIndex = tracks.findIndex((t) => t.id === currentTrack.id);
@@ -174,7 +190,7 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
         audioRef.current.removeEventListener("ended", handleEnded);
       }
     };
-  }, [currentTrack, tracks]);
+  }, []); // Empty dependency array since we use refs
 
   return (
     <MusicContext.Provider
