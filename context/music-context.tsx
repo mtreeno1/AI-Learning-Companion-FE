@@ -64,7 +64,6 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   // Initialize audio element
   useEffect(() => {
     audioRef.current = new Audio();
-    audioRef.current.volume = volume;
     audioRef.current.loop = false;
 
     return () => {
@@ -150,12 +149,19 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
   // Handle track end - play next track automatically
   useEffect(() => {
     const handleEnded = () => {
-      if (!currentTrack || tracks.length === 0) return;
+      if (!currentTrack || tracks.length === 0 || !audioRef.current) return;
+      
       const currentIndex = tracks.findIndex((t) => t.id === currentTrack.id);
       const nextIndex = (currentIndex + 1) % tracks.length;
       const nextTrack = tracks[nextIndex];
+      
       if (nextTrack) {
-        play(nextTrack);
+        setCurrentTrack(nextTrack);
+        audioRef.current.src = nextTrack.url;
+        audioRef.current.play().catch((error) => {
+          console.error(`Error playing next track "${nextTrack.title}":`, error);
+        });
+        setIsPlaying(true);
       }
     };
 
