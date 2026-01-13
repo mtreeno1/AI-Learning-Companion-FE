@@ -30,27 +30,27 @@ const MusicContext = createContext<MusicContextType | undefined>(undefined);
 const defaultTracks: MusicTrack[] = [
   {
     id: "1",
-    title: "Peaceful Piano",
+    title: "40 Hz binaural beats",
     artist: "Focus Sounds",
-    url: "/assets/music/peaceful-piano.mp3",
+    url: "/assets/music/40hz.mp3",
   },
   {
     id: "2",
-    title: "Ambient Study",
+    title: "Alpha & Theta Study",
     artist: "Concentration Music",
-    url: "/assets/music/ambient-study.mp3",
+    url: "/assets/music/alpha_theta_waves.mp3",
   },
   {
     id: "3",
-    title: "Lofi Beats",
+    title: "Rain sound",
     artist: "Study Vibes",
-    url: "/assets/music/lofi-beats.mp3",
+    url: "/assets/music/rain.mp3",
   },
   {
     id: "4",
-    title: "Nature Sounds",
+    title: "Natural Sand Sounds",
     artist: "Relaxation",
-    url: "/assets/music/nature-sounds.mp3",
+    url: "/assets/music/sand.mp3",
   },
 ];
 
