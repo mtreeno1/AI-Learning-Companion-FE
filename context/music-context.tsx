@@ -67,16 +67,8 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
     audioRef.current.volume = volume;
     audioRef.current.loop = false;
 
-    // Handle track end - play next track automatically
-    const handleEnded = () => {
-      playNext();
-    };
-
-    audioRef.current.addEventListener("ended", handleEnded);
-
     return () => {
       if (audioRef.current) {
-        audioRef.current.removeEventListener("ended", handleEnded);
         audioRef.current.pause();
         audioRef.current.src = "";
       }
@@ -98,13 +90,13 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       setCurrentTrack(track);
       audioRef.current.src = track.url;
       audioRef.current.play().catch((error) => {
-        console.error("Error playing audio:", error);
+        console.error(`Error playing audio track "${track.title}":`, error);
       });
       setIsPlaying(true);
     } else if (currentTrack) {
       // Resume current track
       audioRef.current.play().catch((error) => {
-        console.error("Error playing audio:", error);
+        console.error(`Error resuming audio track "${currentTrack.title}":`, error);
       });
       setIsPlaying(true);
     } else if (tracks.length > 0) {
@@ -154,6 +146,29 @@ export function MusicProvider({ children }: { children: React.ReactNode }) {
       play(track);
     }
   };
+
+  // Handle track end - play next track automatically
+  useEffect(() => {
+    const handleEnded = () => {
+      if (!currentTrack || tracks.length === 0) return;
+      const currentIndex = tracks.findIndex((t) => t.id === currentTrack.id);
+      const nextIndex = (currentIndex + 1) % tracks.length;
+      const nextTrack = tracks[nextIndex];
+      if (nextTrack) {
+        play(nextTrack);
+      }
+    };
+
+    if (audioRef.current) {
+      audioRef.current.addEventListener("ended", handleEnded);
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.removeEventListener("ended", handleEnded);
+      }
+    };
+  }, [currentTrack, tracks]);
 
   return (
     <MusicContext.Provider

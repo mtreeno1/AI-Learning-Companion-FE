@@ -92,6 +92,7 @@ export function FocusMusicPlayer() {
             {isPlaying ? (
               <Pause className="w-5 h-5" />
             ) : (
+              // Slight left margin to visually center the play triangle icon
               <Play className="w-5 h-5 ml-0.5" />
             )}
           </Button>
