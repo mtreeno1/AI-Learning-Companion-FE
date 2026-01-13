@@ -4,6 +4,7 @@ import { useState } from "react"
 import { CameraPreview } from "@/components/camera-preview"
 import { HourglassTimer } from "@/components/hourglass-timer"
 import { ModeSelector } from "@/components/mode-selector"
+import { FocusMusicPlayer } from "@/components/focus-music-player"
 import { Button } from "@/components/ui/button"
 import { Play, Pause, RotateCcw, Video } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
@@ -94,35 +95,41 @@ export function StudyMode() {
           <CameraPreview enableRecording={enableRecording} />
         </div>
 
-        {/* Hourglass Timer */}
-        <div className="w-96 flex flex-col items-center justify-center">
-          <HourglassTimer
-            timeRemaining={timeRemaining}
-            totalTime={totalTime}
-            isRunning={isRunning}
-            onTimeUpdate={setTimeRemaining}
-          />
+        {/* Right Sidebar with Timer and Music Player */}
+        <div className="w-96 flex flex-col gap-6">
+          {/* Hourglass Timer */}
+          <div className="flex flex-col items-center justify-center">
+            <HourglassTimer
+              timeRemaining={timeRemaining}
+              totalTime={totalTime}
+              isRunning={isRunning}
+              onTimeUpdate={setTimeRemaining}
+            />
 
-          {/* Controls */}
-          <div className="flex gap-3 mt-8">
-            {!isRunning ? (
-              <Button
-                onClick={handleStart}
-                className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-6"
-              >
-                <Play className="w-4 h-4" />
-                Start
+            {/* Controls */}
+            <div className="flex gap-3 mt-8">
+              {!isRunning ? (
+                <Button
+                  onClick={handleStart}
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 gap-2 px-6"
+                >
+                  <Play className="w-4 h-4" />
+                  Start
+                </Button>
+              ) : (
+                <Button onClick={handlePause} variant="secondary" className="gap-2 px-6">
+                  <Pause className="w-4 h-4" />
+                  Pause
+                </Button>
+              )}
+              <Button onClick={handleReset} variant="outline" size="icon" className="border-border bg-transparent">
+                <RotateCcw className="w-4 h-4" />
               </Button>
-            ) : (
-              <Button onClick={handlePause} variant="secondary" className="gap-2 px-6">
-                <Pause className="w-4 h-4" />
-                Pause
-              </Button>
-            )}
-            <Button onClick={handleReset} variant="outline" size="icon" className="border-border bg-transparent">
-              <RotateCcw className="w-4 h-4" />
-            </Button>
+            </div>
           </div>
+
+          {/* Music Player */}
+          <FocusMusicPlayer />
         </div>
       </div>
     </div>

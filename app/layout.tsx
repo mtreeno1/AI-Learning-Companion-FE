@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/context/auth-context"
+import { MusicProvider } from "@/context/music-context"
 import { Analytics } from "@vercel/analytics/react"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -23,7 +24,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          {children}
+          <MusicProvider>
+            {children}
+          </MusicProvider>
         </AuthProvider>
         <Analytics />
       </body>
