@@ -4,14 +4,16 @@ import type React from "react"
 
 import { Card } from "@/components/ui/card"
 import { TrendingUp, Clock, Target, Flame } from "lucide-react"
-
-// Mock data for demo
-const focusScore = 78
-const todayMinutes = 127
-const streak = 5
-const weeklyData = [65, 72, 58, 80, 75, 82, 78]
+import { useSession } from "@/context/session-context"
 
 export function Dashboard() {
+  const { getTodayStats, getWeeklyData } = useSession()
+  const { totalMinutes, sessionCount, avgFocusScore } = getTodayStats()
+  const weeklyData = getWeeklyData()
+
+  // Calculate streak (simplified - consecutive days with sessions)
+  const streak = 5 // TODO: Implement actual streak calculation
+
   return (
     <div className="h-full p-8">
       {/* Header */}
@@ -25,19 +27,25 @@ export function Dashboard() {
         <StatCard
           icon={Target}
           label="Focus Score"
-          value={`${focusScore}%`}
-          trend="+5% from last week"
+          value={`${avgFocusScore}%`}
+          trend={sessionCount > 0 ? `${sessionCount} session${sessionCount > 1 ? 's' : ''} today` : "No sessions yet"}
           color="primary"
         />
         <StatCard
           icon={Clock}
           label="Today"
-          value={`${Math.floor(todayMinutes / 60)}h ${todayMinutes % 60}m`}
-          trend="2 sessions"
+          value={`${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`}
+          trend={`${sessionCount} session${sessionCount !== 1 ? 's' : ''}`}
           color="accent"
         />
         <StatCard icon={Flame} label="Streak" value={`${streak} days`} trend="Keep it up!" color="primary" />
-        <StatCard icon={TrendingUp} label="This Week" value="8.5h" trend="+1.2h vs last week" color="accent" />
+        <StatCard 
+          icon={TrendingUp} 
+          label="This Week" 
+          value={`${(weeklyData.reduce((a, b) => a + b, 0) / 7).toFixed(0)}%`}
+          trend="Average focus score" 
+          color="accent" 
+        />
       </div>
 
       {/* Charts Row */}
@@ -64,19 +72,25 @@ export function Dashboard() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="8"
-                  strokeDasharray={`${focusScore * 4.4} 440`}
+                  strokeDasharray={`${avgFocusScore * 4.4} 440`}
                   strokeLinecap="round"
                   className="text-primary drop-shadow-[0_0_8px_var(--primary)]"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-semibold text-foreground">{focusScore}%</span>
+                <span className="text-3xl font-semibold text-foreground">{avgFocusScore}%</span>
                 <span className="text-xs text-muted-foreground">Focus Score</span>
               </div>
             </div>
           </div>
           <p className="text-center text-sm text-muted-foreground mt-4">
-            Great job! You&apos;re more focused than 78% of your sessions.
+            {avgFocusScore >= 85
+              ? "Excellent focus! Keep up the great work!"
+              : avgFocusScore >= 70
+              ? "Good job! You're staying focused."
+              : avgFocusScore > 0
+              ? "Keep practicing to improve your focus."
+              : "Start a study session to track your focus."}
           </p>
         </Card>
 
@@ -88,7 +102,7 @@ export function Dashboard() {
               <div key={index} className="flex-1 flex flex-col items-center gap-2">
                 <div
                   className="w-full rounded-t-md bg-gradient-to-t from-primary/60 to-primary transition-all duration-300 hover:from-primary/80 hover:to-primary"
-                  style={{ height: `${value * 1.6}px` }}
+                  style={{ height: `${Math.max(value * 1.6, 10)}px` }}
                 />
                 <span className="text-xs text-muted-foreground">
                   {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index]}
@@ -102,9 +116,13 @@ export function Dashboard() {
       {/* Encouragement */}
       <Card className="mt-6 p-4 bg-primary/5 border-primary/20">
         <p className="text-sm text-foreground">
-          <span className="font-medium">Nice progress!</span>{" "}
+          <span className="font-medium">
+            {sessionCount > 0 ? "Nice progress!" : "Ready to start?"}
+          </span>{" "}
           <span className="text-muted-foreground">
-            You&apos;ve improved your focus by 12% this week. Keep up the momentum!
+            {sessionCount > 0
+              ? `You've completed ${sessionCount} session${sessionCount > 1 ? 's' : ''} today. Keep up the momentum!`
+              : "Begin your first study session to start tracking your progress."}
           </span>
         </p>
       </Card>
