@@ -132,7 +132,10 @@ export function StudyMode() {
       <div className="flex-1 flex gap-8 items-stretch">
         {/* Camera Preview */}
         <div className="flex-1 flex flex-col min-w-0">
-          <CameraPreview enableRecording={enableRecording} />
+          <CameraPreview 
+            isTimerRunning={isRunning}
+            enableRecording={enableRecording} 
+          />
         </div>
 
         {/* Right Sidebar with Timer and Music Player */}
