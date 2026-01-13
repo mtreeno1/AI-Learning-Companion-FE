@@ -64,8 +64,27 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       console.log("✅ Fetched sessions from backend:", data);
 
+      // Handle different response formats
+      let sessionsArray: any[] = [];
+      
+      if (Array.isArray(data)) {
+        // Direct array response
+        sessionsArray = data;
+      } else if (data && Array.isArray(data.sessions)) {
+        // Object with sessions property
+        sessionsArray = data.sessions;
+      } else if (data && Array.isArray(data.data)) {
+        // Object with data property
+        sessionsArray = data.data;
+      } else {
+        console.warn("Unexpected response format:", data);
+        // Fallback to localStorage if format is unexpected
+        loadLocalSessions();
+        return;
+      }
+
       // Transform backend sessions to our format
-      const transformedSessions: StudySession[] = data.map((session: any) => ({
+      const transformedSessions: StudySession[] = sessionsArray.map((session: any) => ({
         id: session.session_id,
         startTime: new Date(session.started_at),
         endTime: session.ended_at ? new Date(session.ended_at) : undefined,
