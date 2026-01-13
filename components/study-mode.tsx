@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CameraPreview } from "@/components/camera-preview"
 import { HourglassTimer } from "@/components/hourglass-timer"
 import { ModeSelector } from "@/components/mode-selector"
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Play, Pause, RotateCcw, Video } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { useSession } from "@/context/session-context"
+import { useToast } from "@/hooks/use-toast"
 
 export type StudyModeType = "pomodoro" | "manual" | null
 
@@ -18,6 +20,10 @@ export function StudyMode() {
   const [timeRemaining, setTimeRemaining] = useState(25 * 60) // 25 minutes default
   const [manualDuration, setManualDuration] = useState(30) // 30 minutes default for manual
   const [enableRecording, setEnableRecording] = useState(false) // ✅ Recording option
+  const [sessionStartTime, setSessionStartTime] = useState<number | null>(null)
+  
+  const { startSession, endSession, currentSession } = useSession()
+  const { toast } = useToast()
 
   const handleModeSelect = (mode: StudyModeType) => {
     setSelectedMode(mode)
@@ -29,8 +35,21 @@ export function StudyMode() {
     setIsRunning(false)
   }
 
-  const handleStart = () => setIsRunning(true)
-  const handlePause = () => setIsRunning(false)
+  const handleStart = () => {
+    setIsRunning(true)
+    setSessionStartTime(Date.now())
+    
+    // Start tracking session
+    if (selectedMode) {
+      const duration = selectedMode === "pomodoro" ? 25 : manualDuration
+      startSession(selectedMode, duration)
+    }
+  }
+
+  const handlePause = () => {
+    setIsRunning(false)
+  }
+
   const handleReset = () => {
     setIsRunning(false)
     if (selectedMode === "pomodoro") {
@@ -38,7 +57,27 @@ export function StudyMode() {
     } else {
       setTimeRemaining(manualDuration * 60)
     }
+    setSessionStartTime(null)
   }
+
+  // Handle session completion
+  useEffect(() => {
+    if (timeRemaining === 0 && isRunning && currentSession) {
+      setIsRunning(false)
+      
+      // Calculate focus score (simplified - in real app would come from AI)
+      const focusScore = Math.floor(Math.random() * 30) + 70 // 70-100%
+      
+      endSession(focusScore)
+      
+      toast({
+        title: "Session Completed! 🎉",
+        description: `Great work! Focus score: ${focusScore}%`,
+      })
+      
+      setSessionStartTime(null)
+    }
+  }, [timeRemaining, isRunning, currentSession, endSession, toast])
 
   const totalTime = selectedMode === "pomodoro" ? 25 * 60 : manualDuration * 60
 
@@ -82,6 +121,7 @@ export function StudyMode() {
             size="sm"
             onClick={() => setSelectedMode(null)}
             className="text-muted-foreground hover:text-foreground"
+            disabled={isRunning}
           >
             Change Mode
           </Button>

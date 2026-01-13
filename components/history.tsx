@@ -1,30 +1,39 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { Clock, Target, Calendar } from "lucide-react"
-
-// Mock data for demo
-const sessions = [
-  { id: 1, date: "Today", time: "2:30 PM", duration: 25, focusScore: 92, mode: "Pomodoro" },
-  { id: 2, date: "Today", time: "11:00 AM", duration: 45, focusScore: 78, mode: "Manual" },
-  { id: 3, date: "Yesterday", time: "4:15 PM", duration: 25, focusScore: 85, mode: "Pomodoro" },
-  { id: 4, date: "Yesterday", time: "10:30 AM", duration: 60, focusScore: 71, mode: "Manual" },
-  { id: 5, date: "Dec 22", time: "3:00 PM", duration: 25, focusScore: 88, mode: "Pomodoro" },
-  { id: 6, date: "Dec 22", time: "9:45 AM", duration: 30, focusScore: 82, mode: "Manual" },
-  { id: 7, date: "Dec 21", time: "2:00 PM", duration: 25, focusScore: 79, mode: "Pomodoro" },
-]
+import { Clock, Target, Calendar, Music2 } from "lucide-react"
+import { useSession } from "@/context/session-context"
 
 export function History() {
-  const groupedSessions = sessions.reduce(
-    (acc, session) => {
-      if (!acc[session.date]) {
-        acc[session.date] = []
-      }
-      acc[session.date].push(session)
-      return acc
-    },
-    {} as Record<string, typeof sessions>,
-  )
+  const { sessions } = useSession()
+
+  // Group sessions by date
+  const groupedSessions = sessions
+    .filter((s) => s.completed)
+    .reduce(
+      (acc, session) => {
+        const date = new Date(session.startTime)
+        const today = new Date()
+        const yesterday = new Date(today)
+        yesterday.setDate(yesterday.getDate() - 1)
+
+        let dateKey: string
+        if (date.toDateString() === today.toDateString()) {
+          dateKey = "Today"
+        } else if (date.toDateString() === yesterday.toDateString()) {
+          dateKey = "Yesterday"
+        } else {
+          dateKey = date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+        }
+
+        if (!acc[dateKey]) {
+          acc[dateKey] = []
+        }
+        acc[dateKey].push(session)
+        return acc
+      },
+      {} as Record<string, typeof sessions>,
+    )
 
   return (
     <div className="h-full p-8">
@@ -35,42 +44,69 @@ export function History() {
       </div>
 
       {/* Session List */}
-      <div className="space-y-6">
-        {Object.entries(groupedSessions).map(([date, dateSessions]) => (
-          <div key={date}>
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-medium text-muted-foreground">{date}</h2>
-            </div>
-            <div className="space-y-2">
-              {dateSessions.map((session) => (
-                <Card
-                  key={session.id}
-                  className="p-4 bg-card/50 backdrop-blur-xl border-border/50 hover:bg-card/70 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground">{session.time}</span>
+      {Object.keys(groupedSessions).length === 0 ? (
+        <Card className="p-8 bg-card/50 backdrop-blur-xl border-border/50 text-center">
+          <Clock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <h3 className="text-lg font-medium text-foreground mb-2">No sessions yet</h3>
+          <p className="text-sm text-muted-foreground">
+            Start a study session to begin tracking your progress.
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {Object.entries(groupedSessions).map(([date, dateSessions]) => (
+            <div key={date}>
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <h2 className="text-sm font-medium text-muted-foreground">{date}</h2>
+              </div>
+              <div className="space-y-2">
+                {dateSessions.map((session) => (
+                  <Card
+                    key={session.id}
+                    className="p-4 bg-card/50 backdrop-blur-xl border-border/50 hover:bg-card/70 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex flex-col gap-2 flex-1">
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm text-foreground">
+                              {new Date(session.startTime).toLocaleTimeString("en-US", {
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          <span className="text-sm text-muted-foreground">{session.duration} min</span>
+                          <span className="px-2 py-0.5 text-xs rounded-md bg-muted text-muted-foreground capitalize">
+                            {session.mode}
+                          </span>
+                        </div>
+                        
+                        {/* Music tracks played */}
+                        {session.musicTracks && session.musicTracks.length > 0 && (
+                          <div className="flex items-start gap-2 mt-1">
+                            <Music2 className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                            <span className="text-xs text-muted-foreground">
+                              {session.musicTracks.join(", ")}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <span className="text-sm text-muted-foreground">{session.duration} min</span>
-                      <span className="px-2 py-0.5 text-xs rounded-md bg-muted text-muted-foreground">
-                        {session.mode}
-                      </span>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Target className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-medium text-foreground">{session.focusScore}%</span>
+                        <FocusIndicator score={session.focusScore} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Target className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-medium text-foreground">{session.focusScore}%</span>
-                      <FocusIndicator score={session.focusScore} />
-                    </div>
-                  </div>
-                </Card>
-              ))}
+                  </Card>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
